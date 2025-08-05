@@ -36,10 +36,19 @@
       font-size: 14px;
       z-index: 3;
     }
+    .camera-selector {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      z-index: 4;
+      padding: 4px;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
 
+<select id="cameraSelect" class="camera-selector"></select>
 <video id="video" autoplay muted playsinline></video>
 
 <div id="line1" class="line" style="left: 30vw;"></div>
@@ -49,13 +58,22 @@
 <div id="label2" class="label" style="right: 10px;"></div>
 
 <script>
-  async function startCamera() {
+  const cameraSelect = document.getElementById('cameraSelect');
+  let currentStream;
+
+  async function startCamera(deviceId) {
+    if (currentStream) {
+      currentStream.getTracks().forEach(track => track.stop());
+    }
     const constraints = {
-      video: { facingMode: "environment" },
+      video: deviceId
+        ? { deviceId: { exact: deviceId } }
+        : { facingMode: "environment" },
       audio: false,
     };
     try {
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      currentStream = stream;
       const video = document.getElementById("video");
       video.srcObject = stream;
     } catch (err) {
@@ -63,33 +81,43 @@
     }
   }
 
+  async function populateCameraList() {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const videoInputs = devices.filter(d => d.kind === 'videoinput');
+    cameraSelect.innerHTML = '';
+    videoInputs.forEach((device, index) => {
+      const option = document.createElement('option');
+      option.value = device.deviceId;
+      option.text = device.label || `Camera ${index + 1}`;
+      cameraSelect.appendChild(option);
+    });
+    cameraSelect.addEventListener('change', () => {
+      startCamera(cameraSelect.value);
+    });
+    if (videoInputs.length) {
+      startCamera(videoInputs[0].deviceId);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    populateCameraList();
+    makeDraggable(document.getElementById("line1"), document.getElementById("label1"));
+    makeDraggable(document.getElementById("line2"), document.getElementById("label2"));
+  });
+
   function makeDraggable(line, label) {
     let dragging = false;
-
     const updatePosition = (clientX) => {
       let x = Math.max(0, Math.min(window.innerWidth, clientX));
       line.style.left = `${x}px`;
-
       const center = window.innerWidth / 2;
       const diff = x - center;
       label.textContent = `X: ${x}px (Δ ${diff >= 0 ? "+" : ""}${diff}px)`;
     };
-
-    // Mouse events
-    line.addEventListener("mousedown", e => {
-      dragging = true;
-      e.preventDefault();
-    });
+    line.addEventListener("mousedown", e => { dragging = true; e.preventDefault(); });
     window.addEventListener("mouseup", () => dragging = false);
-    window.addEventListener("mousemove", e => {
-      if (dragging) updatePosition(e.clientX);
-    });
-
-    // Touch events
-    line.addEventListener("touchstart", e => {
-      dragging = true;
-      e.preventDefault();
-    });
+    window.addEventListener("mousemove", e => { if (dragging) updatePosition(e.clientX); });
+    line.addEventListener("touchstart", e => { dragging = true; e.preventDefault(); });
     window.addEventListener("touchend", () => dragging = false);
     window.addEventListener("touchmove", e => {
       if (dragging && e.touches.length > 0) {
@@ -97,10 +125,6 @@
       }
     });
   }
-
-  startCamera();
-  makeDraggable(document.getElementById("line1"), document.getElementById("label1"));
-  makeDraggable(document.getElementById("line2"), document.getElementById("label2"));
 </script>
 
 </body>
