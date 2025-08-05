@@ -2,17 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BikeCam Align</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Camera Align Tool</title>
   <style>
     body, html {
-      margin: 0;
-      padding: 0;
+      margin: 0; padding: 0;
       overflow: hidden;
       font-family: sans-serif;
     }
 
-    video {
+    #video {
       position: fixed;
       top: 0; left: 0;
       width: 100vw;
@@ -22,124 +21,75 @@
     }
 
     .line {
-      position: absolute;
-      background-color: red;
-      z-index: 10;
-    }
-
-    .vertical {
-      width: 2px;
-      height: 100%;
-      left: 50%;
+      position: fixed;
       top: 0;
-      transform: translateX(-1px);
+      bottom: 0;
+      width: 2px;
+      background-color: red;
+      z-index: 2;
+      cursor: ew-resize;
     }
 
-    .horizontal {
-      height: 2px;
-      width: 100%;
-      top: 50%;
-      left: 0;
-      transform: translateY(-1px);
-    }
-
-    .alignment-frame {
-      position: absolute;
-      top: 10%;
-      left: 25%;
-      width: 50%;
-      height: 80%;
-      border: 2px dashed lime;
-      box-sizing: border-box;
-      z-index: 5;
-    }
-
-    .corner {
-      position: absolute;
-      width: 30px;
-      height: 30px;
-      border: 2px solid rgba(255,255,255,0.8);
-      z-index: 6;
-    }
-
-    .top-left { top: 5px; left: 5px; border-right: none; border-bottom: none; }
-    .top-right { top: 5px; right: 5px; border-left: none; border-bottom: none; }
-    .bottom-left { bottom: 5px; left: 5px; border-right: none; border-top: none; }
-    .bottom-right { bottom: 5px; right: 5px; border-left: none; border-top: none; }
-
-    .grid {
-      position: absolute;
-      background-color: rgba(255,255,255,0.3);
-      z-index: 4;
-    }
-
-    .grid-vertical-1 { left: 33.33%; width: 1px; height: 100%; }
-    .grid-vertical-2 { left: 66.66%; width: 1px; height: 100%; }
-    .grid-horizontal-1 { top: 33.33%; height: 1px; width: 100%; }
-    .grid-horizontal-2 { top: 66.66%; height: 1px; width: 100%; }
-
-    button {
-      position: absolute;
-      top: 15px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 20;
-      padding: 10px 15px;
+    .label {
+      position: fixed;
+      top: 10px;
       background: rgba(0,0,0,0.6);
       color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 16px;
-      cursor: pointer;
+      padding: 4px 8px;
+      font-size: 14px;
+      z-index: 3;
     }
   </style>
 </head>
 <body>
 
-  <video id="video" autoplay muted playsinline></video>
+<video id="video" autoplay muted playsinline></video>
 
-  <!-- Overlays -->
-  <div class="line vertical"></div>
-  <div class="line horizontal"></div>
-  <div class="alignment-frame"></div>
+<div id="line1" class="line" style="left: 30vw;"></div>
+<div id="line2" class="line" style="left: 70vw;"></div>
 
-  <!-- Corners -->
-  <div class="corner top-left"></div>
-  <div class="corner top-right"></div>
-  <div class="corner bottom-left"></div>
-  <div class="corner bottom-right"></div>
+<div id="label1" class="label" style="left: 10px;"></div>
+<div id="label2" class="label" style="right: 10px;"></div>
 
-  <!-- Grid Lines -->
-  <div class="grid grid-vertical-1"></div>
-  <div class="grid grid-vertical-2"></div>
-  <div class="grid grid-horizontal-1"></div>
-  <div class="grid grid-horizontal-2"></div>
-
-  <!-- Toggle Button -->
-  <button id="toggle-horizontal">Toggle Horizontal Line</button>
-
-  <script>
-    async function startCamera() {
-      const constraints = {
-        video: { facingMode: "environment" },
-        audio: false
-      };
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        const video = document.getElementById("video");
-        video.srcObject = stream;
-      } catch (err) {
-        alert("Kamera konnte nicht gestartet werden: " + err.message);
-      }
-    }
-
-    startCamera();
-
-    document.getElementById("toggle-horizontal").onclick = () => {
-      const line = document.querySelector(".horizontal");
-      line.style.display = (line.style.display === "none") ? "block" : "none";
+<script>
+  async function startCamera() {
+    const constraints = {
+      video: { facingMode: "environment" },
+      audio: false,
     };
-  </script>
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      const video = document.getElementById("video");
+      video.srcObject = stream;
+    } catch (err) {
+      alert("Kamera konnte nicht gestartet werden: " + err.message);
+    }
+  }
+
+  function makeDraggable(line, label) {
+    let dragging = false;
+
+    line.addEventListener("mousedown", e => {
+      dragging = true;
+    });
+
+    window.addEventListener("mouseup", () => dragging = false);
+
+    window.addEventListener("mousemove", e => {
+      if (!dragging) return;
+      let x = e.clientX;
+      line.style.left = `${x}px`;
+
+      const center = window.innerWidth / 2;
+      const diff = x - center;
+      label.textContent = `X: ${x}px (Δ ${diff >= 0 ? "+" : ""}${diff}px)`;
+    });
+  }
+
+  startCamera();
+  makeDraggable(document.getElementById("line1"), document.getElementById("label1"));
+  makeDraggable(document.getElementById("line2"), document.getElementById("label2"));
+</script>
 
 </body>
 </html>
