@@ -44,11 +44,26 @@
       padding: 4px;
       font-size: 14px;
     }
+
+    .grid {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 1;
+      background-image:
+        linear-gradient(gray 1px, transparent 1px),
+        linear-gradient(90deg, gray 1px, transparent 1px);
+      background-size: 50px 50px;
+    }
   </style>
 </head>
 <body>
 
 <select id="cameraSelect" class="camera-selector"></select>
+<div class="grid"></div>
 <video id="video" autoplay muted playsinline></video>
 
 <div id="line1" class="line" style="left: 30vw;"></div>
@@ -56,6 +71,9 @@
 
 <div id="label1" class="label" style="left: 10px;"></div>
 <div id="label2" class="label" style="right: 10px;"></div>
+
+<div id="line3" class="line" style="left: 50vw; background-color: yellow;"></div>
+<div id="label3" class="label" style="left: calc(50vw - 40px);"></div>
 
 <script>
   const cameraSelect = document.getElementById('cameraSelect');
@@ -103,6 +121,10 @@
     populateCameraList();
     makeDraggable(document.getElementById("line1"), document.getElementById("label1"));
     makeDraggable(document.getElementById("line2"), document.getElementById("label2"));
+    makeDraggable(document.getElementById("line3"), document.getElementById("label3"));
+    // initialize third line label at center
+    const centerX = window.innerWidth / 2;
+    document.getElementById("label3").textContent = `X: ${centerX}px (Δ 0px)`;
   });
 
   function makeDraggable(line, label) {
